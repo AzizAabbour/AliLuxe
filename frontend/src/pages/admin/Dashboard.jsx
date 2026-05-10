@@ -1,18 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiTrendingUp, FiShoppingBag, FiUsers, FiBox, FiArrowUpRight, FiArrowDownRight } from 'react-icons/fi';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { 
+  FiShoppingBag, FiUsers, FiDollarSign, FiPackage, 
+  FiTrendingUp, FiClock, FiCheckCircle, FiXCircle 
+} from 'react-icons/fi';
 import api from '../../api/axios';
 import LoadingScreen from '../../components/ui/LoadingScreen';
 
 export default function Dashboard() {
-  const [data, setData] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [latestOrders, setLatestOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api.get('/admin/dashboard')
       .then(res => {
-        setData(res.data);
+        setStats(res.data.stats);
+        setLatestOrders(res.data.recent_orders || res.data.latest_orders);
         setLoading(false);
       })
       .catch(err => {
@@ -23,131 +27,108 @@ export default function Dashboard() {
 
   if (loading) return <LoadingScreen />;
 
-  const stats = [
-    { title: 'Total Revenue', value: `$${data.stats.total_revenue?.toLocaleString()}`, icon: FiTrendingUp, trend: '+12.5%', color: 'var(--color-success)', bg: 'rgba(0,184,148,0.1)' },
-    { title: 'Total Orders', value: data.stats.total_orders, icon: FiShoppingBag, trend: '+8.2%', color: 'var(--color-primary)', bg: 'rgba(108,92,231,0.1)' },
-    { title: 'Total Products', value: data.stats.total_products, icon: FiBox, trend: '+5', color: 'var(--color-secondary)', bg: 'rgba(0,206,201,0.1)' },
-    { title: 'Active Customers', value: data.stats.total_users, icon: FiUsers, trend: '+18.4%', color: 'var(--color-accent)', bg: 'rgba(253,121,168,0.1)' },
+  const statCards = [
+    { title: 'Total Revenue', value: `${(stats?.total_revenue || 0).toLocaleString()} DH`, icon: FiDollarSign, color: 'text-green-600', bg: 'bg-green-50' },
+    { title: 'Total Orders', value: stats?.total_orders || 0, icon: FiShoppingBag, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { title: 'Customers', value: stats?.total_users || 0, icon: FiUsers, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { title: 'Active Products', value: stats?.total_products || 0, icon: FiPackage, color: 'text-orange-600', bg: 'bg-orange-50' },
   ];
 
-  // Map monthly sales for chart
-  const chartData = data.monthly_sales.map(item => ({
-    name: item.month,
-    revenue: item.revenue,
-    orders: item.orders
-  }));
-
   return (
-    <div className="space-y-10" style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-      <header>
-        <h1 className="text-3xl font-black mb-2" style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 900 }}>Analytics Overview</h1>
-        <p className="text-text-secondary">Welcome back, here's what's happening with your store today.</p>
-      </header>
+    <div style={{ maxWidth: '1400px', margin: '0 auto', paddingTop: '180px', paddingBottom: '80px', paddingLeft: '24px', paddingRight: '24px' }}>
+      <div style={{ marginBottom: '40px' }}>
+        <h1 style={{ fontSize: '36px', fontWeight: '900', color: '#111827', margin: '0 0 8px 0' }}>Dashboard Overview</h1>
+        <p style={{ color: '#6b7280', margin: 0 }}>Welcome back, Admin. Here's what's happening today.</p>
+      </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem' }}>
-        {stats.map((stat, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="glass-card p-8"
-            style={{ padding: '2rem', borderRadius: '1.5rem', border: '1px solid rgba(255,255,255,0.05)', backgroundColor: 'rgba(255,255,255,0.02)' }}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+        {statCards.map((card, i) => (
+          <div
+            key={card.title}
+            style={{ 
+              backgroundColor: '#fff', 
+              padding: '24px', 
+              borderRadius: '24px', 
+              border: '1px solid #f3f4f6', 
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '24px'
+            }}
           >
-            <div className="flex justify-between items-start mb-6" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ width: '56px', height: '56px', borderRadius: '1rem', backgroundColor: stat.bg, color: stat.color }}>
-                <stat.icon size={28} />
-              </div>
-              <span className={`text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 ${stat.trend.startsWith('+') ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`} style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '9999px', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                {stat.trend.startsWith('+') ? <FiArrowUpRight /> : <FiArrowDownRight />} {stat.trend}
-              </span>
+            <div style={{ 
+              width: '56px', 
+              height: '56px', 
+              borderRadius: '16px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              backgroundColor: card.bg === 'bg-green-50' ? '#ecfdf5' : card.bg === 'bg-blue-50' ? '#eff6ff' : card.bg === 'bg-purple-50' ? '#f5f3ff' : '#fff7ed',
+              color: card.color === 'text-green-600' ? '#059669' : card.color === 'text-blue-600' ? '#2563eb' : card.color === 'text-purple-600' ? '#7c3aed' : '#ea580c'
+            }}>
+              <card.icon size={28} />
             </div>
-            <p className="text-text-secondary text-sm font-bold uppercase tracking-widest mb-1" style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: 800 }}>{stat.title}</p>
-            <h3 className="text-3xl font-black" style={{ fontSize: '1.875rem', fontWeight: 900 }}>{stat.value}</h3>
-          </motion.div>
+            <div>
+              <p style={{ fontSize: '11px', fontWeight: '900', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 4px 0' }}>{card.title}</p>
+              <h3 style={{ fontSize: '24px', fontWeight: '900', color: '#111827', margin: 0 }}>{card.value}</h3>
+            </div>
+          </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
-        {/* Sales Chart */}
-        <div className="lg:col-span-2 glass-card p-8 h-[450px]" style={{ gridColumn: 'span 2', padding: '2rem', borderRadius: '1.5rem', border: '1px solid rgba(255,255,255,0.05)', height: '450px' }}>
-          <h3 className="text-xl font-bold mb-8" style={{ fontWeight: 800, marginBottom: '2rem' }}>Revenue Trends</h3>
-          <ResponsiveContainer width="100%" height="85%">
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'var(--color-text-muted)', fontSize: 12}} />
-              <YAxis axisLine={false} tickLine={false} tick={{fill: 'var(--color-text-muted)', fontSize: 12}} />
-              <Tooltip 
-                contentStyle={{backgroundColor: 'var(--color-bg-card)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px'}}
-                itemStyle={{color: 'var(--color-primary)', fontWeight: 'bold'}}
-              />
-              <Area type="monotone" dataKey="revenue" stroke="var(--color-primary)" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
-            </AreaChart>
-          </ResponsiveContainer>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px' }}>
+        {/* Latest Orders */}
+        <div style={{ gridColumn: 'span 2', backgroundColor: '#fff', borderRadius: '30px', border: '1px solid #f3f4f6', overflow: 'hidden' }}>
+          <div style={{ padding: '32px', borderBottom: '1px solid #f9fafb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '20px', fontWeight: '900', color: '#111827', margin: 0 }}>Recent Orders</h3>
+            <button style={{ color: '#FF6600', fontWeight: '700', fontSize: '14px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer' }}>View All</button>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead style={{ backgroundColor: '#f9fafb' }}>
+                <tr>
+                  <th style={{ padding: '24px 32px', textAlign: 'left', fontSize: '10px', fontWeight: '900', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Order ID</th>
+                  <th style={{ padding: '24px 32px', textAlign: 'left', fontSize: '10px', fontWeight: '900', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Customer</th>
+                  <th style={{ padding: '24px 32px', textAlign: 'left', fontSize: '10px', fontWeight: '900', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Amount</th>
+                  <th style={{ padding: '24px 32px', textAlign: 'left', fontSize: '10px', fontWeight: '900', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Status</th>
+                </tr>
+              </thead>
+              <tbody style={{ borderTop: '1px solid #f3f4f6' }}>
+                {Array.isArray(latestOrders) && latestOrders.map((order) => (
+                  <tr key={order.id} style={{ borderBottom: '1px solid #f9fafb' }}>
+                    <td style={{ padding: '20px 32px', fontWeight: '900', color: '#111827' }}>#{order.order_number}</td>
+                    <td style={{ padding: '20px 32px', fontSize: '14px', fontWeight: '700', color: '#4b5563' }}>{order.user?.name}</td>
+                    <td style={{ padding: '20px 32px', fontWeight: '900', color: '#111827' }}>{order.total} DH</td>
+                    <td style={{ padding: '20px 32px' }}>
+                      <span style={{ padding: '4px 12px', borderRadius: '9999px', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', backgroundColor: order.status === 'pending' ? '#fff7ed' : '#ecfdf5', color: order.status === 'pending' ? '#ea580c' : '#059669' }}>
+                        {order.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* Best Sellers */}
-        <div className="glass-card p-8" style={{ padding: '2rem', borderRadius: '1.5rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-          <h3 className="text-xl font-bold mb-8" style={{ fontWeight: 800, marginBottom: '2rem' }}>Best Sellers</h3>
-          <div className="space-y-6" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {data.best_sellers.map((product, i) => (
-              <div key={product.id} className="flex items-center gap-4" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div className="w-12 h-12 rounded-xl bg-white/5 overflow-hidden flex-shrink-0" style={{ width: '48px', height: '48px', borderRadius: '0.75rem', flexShrink: 0 }}>
-                  <img src={product.primary_image?.image_path || `https://picsum.photos/seed/${product.id}/100`} className="w-full h-full object-cover" />
+        {/* Activity Feed */}
+        <div style={{ backgroundColor: '#fff', borderRadius: '30px', border: '1px solid #f3f4f6', padding: '32px' }}>
+          <h3 style={{ fontSize: '20px', fontWeight: '900', color: '#111827', margin: '0 0 32px 0' }}>System Activity</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            {[1, 2, 3, 4, 5].map((_, i) => (
+              <div key={i} style={{ display: 'flex', gap: '16px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', flexShrink: 0 }}>
+                  <FiClock size={18} />
                 </div>
-                <div className="flex-grow min-w-0" style={{ flexGrow: 1, minWidth: 0 }}>
-                  <p className="text-sm font-bold truncate" style={{ fontSize: '0.875rem', fontWeight: 700 }}>{product.name}</p>
-                  <p className="text-xs text-text-muted" style={{ fontSize: '0.75rem' }}>{product.sales_count} sales</p>
-                </div>
-                <div className="text-right" style={{ textAlign: 'right' }}>
-                  <p className="text-sm font-black text-primary" style={{ fontWeight: 900, color: 'var(--color-primary)' }}>${product.price}</p>
+                <div>
+                  <p style={{ fontSize: '14px', color: '#111827', fontWeight: '700', margin: 0 }}>New product added by Admin</p>
+                  <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px', margin: 0 }}>2 hours ago</p>
                 </div>
               </div>
             ))}
           </div>
-          <button className="btn btn-secondary w-full mt-10" style={{ width: '100%', marginTop: '2.5rem' }}>View All Products</button>
         </div>
-      </div>
-
-      {/* Recent Orders */}
-      <div className="glass-card p-8 overflow-x-auto" style={{ padding: '2rem', borderRadius: '1.5rem', border: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto' }}>
-        <div className="flex justify-between items-center mb-8" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
-          <h3 className="text-xl font-bold" style={{ fontWeight: 800 }}>Recent Orders</h3>
-          <button className="text-primary font-bold text-sm hover:underline" style={{ color: 'var(--color-primary)', background: 'none' }}>View All Orders</button>
-        </div>
-        <table className="w-full" style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr className="text-left border-b border-white/5" style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              <th className="pb-4 text-xs uppercase tracking-widest text-text-muted font-black" style={{ paddingBottom: '1rem', fontSize: '10px' }}>Order ID</th>
-              <th className="pb-4 text-xs uppercase tracking-widest text-text-muted font-black" style={{ paddingBottom: '1rem', fontSize: '10px' }}>Customer</th>
-              <th className="pb-4 text-xs uppercase tracking-widest text-text-muted font-black" style={{ paddingBottom: '1rem', fontSize: '10px' }}>Date</th>
-              <th className="pb-4 text-xs uppercase tracking-widest text-text-muted font-black" style={{ paddingBottom: '1rem', fontSize: '10px' }}>Amount</th>
-              <th className="pb-4 text-xs uppercase tracking-widest text-text-muted font-black" style={{ paddingBottom: '1rem', fontSize: '10px' }}>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.recent_orders.map(order => (
-              <tr key={order.id} className="border-b border-white/5 last:border-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <td className="py-4 font-bold text-sm" style={{ padding: '1rem 0', fontWeight: 700 }}>#{order.order_number}</td>
-                <td className="py-4 text-sm" style={{ padding: '1rem 0' }}>{order.user?.name}</td>
-                <td className="py-4 text-sm text-text-secondary" style={{ padding: '1rem 0' }}>{new Date(order.created_at).toLocaleDateString()}</td>
-                <td className="py-4 font-black text-sm" style={{ padding: '1rem 0', fontWeight: 900 }}>${order.total}</td>
-                <td className="py-4" style={{ padding: '1rem 0' }}>
-                  <span className={`badge py-1 px-3 text-[10px] uppercase font-bold status-${order.status}`} style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '10px' }}>
-                    {order.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
     </div>
   );

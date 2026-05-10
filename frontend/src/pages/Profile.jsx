@@ -205,9 +205,9 @@ export default function Profile() {
                         <button 
                           onClick={() => setIsEditing(true)}
                           className="flex items-center gap-2 text-primary font-bold hover:underline"
-                          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-primary)', fontWeight: 700 }}
+                          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-primary)', fontWeight: 700, backgroundColor: '#fff' }}
                         >
-                          <FiEdit2 /> Edit Profile
+                          <FiEdit2 /> Edit Profile 
                         </button>
                       )}
                     </div>

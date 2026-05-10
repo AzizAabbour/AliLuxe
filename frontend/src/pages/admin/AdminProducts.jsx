@@ -1,174 +1,217 @@
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiFilter, FiMoreVertical, FiEye, FiImage } from 'react-icons/fi';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  FiPlus, FiSearch, FiEdit2, FiTrash2, FiFilter, 
+  FiChevronRight, FiImage, FiPackage, FiMoreVertical, FiExternalLink, FiX, FiCheckCircle
+} from 'react-icons/fi';
 import api from '../../api/axios';
 import LoadingScreen from '../../components/ui/LoadingScreen';
 import toast from 'react-hot-toast';
 
 export default function AdminProducts() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  
+  // Edit Modal State
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    category_id: '',
     price: '',
-    compare_price: '',
     stock: '',
-    description: '',
-    short_description: '',
-    is_featured: false,
-    status: 'active'
+    category_id: '',
+    is_active: true
   });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetchData();
+    fetchProducts();
+    fetchCategories();
   }, []);
 
-  const fetchData = async () => {
+  const fetchProducts = () => {
     setLoading(true);
-    try {
-      const [prodRes, catRes] = await Promise.all([
-        api.get('/products?per_page=100'),
-        api.get('/categories')
-      ]);
-      setProducts(prodRes.data.data);
-      setCategories(catRes.data);
-    } catch (err) {
-      toast.error('Failed to fetch data');
-    } finally {
-      setLoading(false);
-    }
+    api.get('/products?include_inactive=1&per_page=100')
+      .then(res => {
+        const productList = res.data.data || res.data;
+        setProducts(Array.isArray(productList) ? productList : []);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
   };
 
-  const handleEdit = (product) => {
+  const fetchCategories = () => {
+    api.get('/categories').then(res => setCategories(res.data.categories || res.data));
+  };
+
+  const handleEditClick = (product) => {
     setEditingProduct(product);
     setFormData({
       name: product.name,
-      category_id: product.category_id,
       price: product.price,
-      compare_price: product.compare_price || '',
       stock: product.stock,
-      description: product.description,
-      short_description: product.short_description || '',
-      is_featured: product.is_featured,
-      status: product.status || 'active'
+      category_id: product.category_id,
+      is_active: product.is_active
     });
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      try {
-        await api.delete(`/admin/products/${id}`);
-        toast.success('Product deleted');
-        fetchData();
-      } catch (err) {
-        toast.error('Delete failed');
-      }
-    }
-  };
-
-  const handleSubmit = async (e) => {
+  const handleUpdate = (e) => {
     e.preventDefault();
-    try {
-      if (editingProduct) {
-        await api.put(`/admin/products/${editingProduct.id}`, formData);
-        toast.success('Product updated');
-      } else {
-        await api.post('/admin/products', formData);
-        toast.success('Product created');
-      }
-      setShowModal(false);
-      fetchData();
-    } catch (err) {
-      toast.error('Operation failed');
+    setSaving(true);
+    api.put(`/admin/products/${editingProduct.id}`, formData)
+      .then(() => {
+        toast.success('Product updated successfully');
+        setShowModal(false);
+        fetchProducts();
+      })
+      .catch(err => {
+        toast.error('Error updating product');
+        console.error(err);
+      })
+      .finally(() => setSaving(false));
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm('Are you sure?')) {
+      api.delete(`/admin/products/${id}`)
+        .then(() => {
+          toast.success('Product deleted');
+          fetchProducts();
+        })
+        .catch(() => toast.error('Error deleting product'));
     }
   };
 
-  if (loading) return <LoadingScreen />;
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const inputStyle = {
+    width: '100%',
+    padding: '12px 16px',
+    backgroundColor: '#f9fafb',
+    border: '1px solid #e5e7eb',
+    borderRadius: '10px',
+    fontSize: '14px',
+    fontWeight: '700',
+    color: '#111827',
+    outline: 'none',
+    boxSizing: 'border-box',
+    display: 'block',
+    marginTop: '6px'
+  };
+
+  const labelStyle = {
+    fontSize: '10px',
+    fontWeight: '900',
+    color: '#9ca3af',
+    textTransform: 'uppercase',
+    letterSpacing: '0.1em'
+  };
+
+  if (loading && products.length === 0) return <LoadingScreen />;
 
   return (
-    <div className="space-y-8" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6" style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <div style={{ maxWidth: '1400px', margin: '0 auto', paddingTop: '180px', paddingBottom: '80px', paddingLeft: '24px', paddingRight: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', gap: '20px', flexWrap: 'wrap' }}>
         <div>
-          <h1 className="text-3xl font-black mb-2" style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 900 }}>Product Management</h1>
-          <p className="text-text-secondary">Control your inventory, prices, and product details.</p>
+          <h1 style={{ fontSize: '36px', fontWeight: '900', color: '#111827', margin: '0 0 8px 0' }}>Products Inventory</h1>
+          <p style={{ color: '#6b7280', margin: 0 }}>Manage your store's products, stock, and pricing.</p>
         </div>
         <button 
-          onClick={() => { setEditingProduct(null); setFormData({name: '', category_id: '', price: '', compare_price: '', stock: '', description: '', short_description: '', is_featured: false, status: 'active'}); setShowModal(true); }}
-          className="btn btn-primary btn-lg px-8 h-14" 
-          style={{ padding: '0 2rem', height: '3.5rem' }}
+          onClick={() => navigate('/admin/products/create')}
+          style={{ 
+            backgroundColor: '#FF6600', 
+            color: '#fff', 
+            padding: '12px 24px', 
+            borderRadius: '12px', 
+            fontWeight: '900', 
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '14px',
+            boxShadow: '0 10px 15px -3px rgba(255, 102, 0, 0.2)'
+          }}
         >
-          <FiPlus className="mr-2" /> Add New Product
+          <FiPlus size={20} /> Create Product
         </button>
-      </header>
+      </div>
 
-      <div className="glass-card p-8" style={{ padding: '2rem', borderRadius: '1.5rem', border: '1px solid rgba(255,255,255,0.05)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-        <div className="flex flex-col md:flex-row gap-6 mb-8" style={{ display: 'flex', gap: '1.5rem', marginBottom: '2rem' }}>
-          <div className="flex-grow relative" style={{ flexGrow: 1 }}>
-            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
-            <input type="text" placeholder="Search products by name, SKU..." className="input-field w-full pl-12" style={{ width: '100%', paddingLeft: '3rem' }} />
-          </div>
-          <div className="flex gap-4" style={{ display: 'flex', gap: '1rem' }}>
-            <button className="btn btn-secondary flex items-center gap-2"><FiFilter /> Filter</button>
-            <button className="btn btn-secondary flex items-center gap-2">Export</button>
-          </div>
+      <div style={{ backgroundColor: '#fff', padding: '16px', borderRadius: '20px', border: '1px solid #f3f4f6', marginBottom: '32px', display: 'flex', gap: '16px' }}>
+        <div style={{ position: 'relative', flexGrow: 1 }}>
+          <FiSearch style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} size={20} />
+          <input 
+            type="text" 
+            placeholder="Search products..." 
+            style={{ width: '100%', padding: '14px 16px 14px 48px', backgroundColor: '#f9fafb', border: 'none', borderRadius: '14px', outline: 'none' }}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
+      </div>
 
-        <div className="overflow-x-auto" style={{ overflowX: 'auto' }}>
-          <table className="w-full" style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr className="text-left border-b border-white/5" style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <th className="pb-4 px-4 text-xs uppercase tracking-widest text-text-muted font-black" style={{ padding: '0 1rem 1rem 1rem', fontSize: '10px' }}>Product</th>
-                <th className="pb-4 px-4 text-xs uppercase tracking-widest text-text-muted font-black" style={{ padding: '0 1rem 1rem 1rem', fontSize: '10px' }}>Category</th>
-                <th className="pb-4 px-4 text-xs uppercase tracking-widest text-text-muted font-black" style={{ padding: '0 1rem 1rem 1rem', fontSize: '10px' }}>Price</th>
-                <th className="pb-4 px-4 text-xs uppercase tracking-widest text-text-muted font-black" style={{ padding: '0 1rem 1rem 1rem', fontSize: '10px' }}>Stock</th>
-                <th className="pb-4 px-4 text-xs uppercase tracking-widest text-text-muted font-black" style={{ padding: '0 1rem 1rem 1rem', fontSize: '10px' }}>Status</th>
-                <th className="pb-4 px-4 text-xs uppercase tracking-widest text-text-muted font-black text-right" style={{ padding: '0 1rem 1rem 1rem', fontSize: '10px', textAlign: 'right' }}>Actions</th>
+      <div style={{ backgroundColor: '#fff', borderRadius: '30px', border: '1px solid #f3f4f6', overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead style={{ backgroundColor: '#f9fafb' }}>
+              <tr>
+                <th style={{ padding: '24px', textAlign: 'left', fontSize: '10px', fontWeight: '900', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Product</th>
+                <th style={{ padding: '24px', textAlign: 'left', fontSize: '10px', fontWeight: '900', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Category</th>
+                <th style={{ padding: '24px', textAlign: 'left', fontSize: '10px', fontWeight: '900', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Price</th>
+                <th style={{ padding: '24px', textAlign: 'left', fontSize: '10px', fontWeight: '900', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Stock</th>
+                <th style={{ padding: '24px', textAlign: 'left', fontSize: '10px', fontWeight: '900', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Status</th>
+                <th style={{ padding: '24px', textAlign: 'right', fontSize: '10px', fontWeight: '900', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {products.map(product => (
-                <tr key={product.id} className="border-b border-white/5 last:border-0 hover:bg-white/2 transition-colors" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <td className="py-4 px-4" style={{ padding: '1rem' }}>
-                    <div className="flex items-center gap-4" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <div className="w-12 h-12 rounded-lg bg-white/5 overflow-hidden flex-shrink-0" style={{ width: '48px', height: '48px', borderRadius: '0.5rem', flexShrink: 0 }}>
-                        <img src={product.primary_image?.image_path || `https://picsum.photos/seed/${product.id}/100`} className="w-full h-full object-cover" />
+            <tbody style={{ borderTop: '1px solid #f3f4f6' }}>
+              {filteredProducts.map((product) => (
+                <tr key={product.id} style={{ borderBottom: '1px solid #f9fafb' }}>
+                  <td style={{ padding: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <div style={{ width: '64px', height: '64px', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#f9fafb', border: '1px solid #f3f4f6' }}>
+                        <img 
+                          src={product.primary_image?.image_path ? `http://localhost:8000/storage/${product.primary_image.image_path}` : 'https://via.placeholder.com/100'} 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
                       </div>
                       <div>
-                        <p className="font-bold text-sm" style={{ fontWeight: 700, fontSize: '0.875rem' }}>{product.name}</p>
-                        <p className="text-[10px] text-text-muted font-black uppercase tracking-widest" style={{ fontSize: '10px', fontWeight: 900 }}>SKU: {product.sku}</p>
+                        <p style={{ fontWeight: '900', color: '#111827', margin: 0 }}>{product.name}</p>
+                        <p style={{ fontSize: '10px', color: '#9ca3af', fontWeight: '700', textTransform: 'uppercase', margin: '4px 0 0 0' }}>ID: #{product.id.toString().padStart(4, '0')}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="py-4 px-4" style={{ padding: '1rem' }}>
-                    <span className="text-sm font-medium text-text-secondary" style={{ fontSize: '0.875rem' }}>{product.category?.name}</span>
-                  </td>
-                  <td className="py-4 px-4" style={{ padding: '1rem' }}>
-                    <p className="font-black text-sm" style={{ fontWeight: 900, fontSize: '0.875rem' }}>${product.price}</p>
-                    {product.compare_price && <p className="text-xs text-text-muted line-through" style={{ fontSize: '0.75rem', textDecoration: 'line-through' }}>${product.compare_price}</p>}
-                  </td>
-                  <td className="py-4 px-4" style={{ padding: '1rem' }}>
-                    <div className="flex flex-col gap-1" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <span className={`text-sm font-bold ${product.stock < 10 ? 'text-danger' : 'text-text-secondary'}`} style={{ fontSize: '0.875rem' }}>{product.stock} in stock</span>
-                      <div className="w-20 h-1.5 bg-white/5 rounded-full overflow-hidden" style={{ width: '5rem', height: '0.375rem', borderRadius: '9999px', backgroundColor: 'rgba(255,255,255,0.05)' }}>
-                        <div className={`h-full ${product.stock < 10 ? 'bg-danger' : 'bg-success'}`} style={{ height: '100%', width: `${Math.min(100, product.stock)}%` }} />
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-4" style={{ padding: '1rem' }}>
-                    <span className={`badge py-1 px-3 text-[10px] uppercase font-bold ${product.status === 'active' ? 'badge-success' : 'badge-secondary'}`} style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '10px' }}>
-                      {product.status || 'active'}
+                  <td style={{ padding: '24px' }}>
+                    <span style={{ padding: '4px 12px', backgroundColor: '#f3f4f6', color: '#4b5563', borderRadius: '8px', fontSize: '11px', fontWeight: '700' }}>
+                      {product.category?.name || 'General'}
                     </span>
                   </td>
-                  <td className="py-4 px-4 text-right" style={{ padding: '1rem', textAlign: 'right' }}>
-                    <div className="flex justify-end gap-2" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                      <button onClick={() => handleEdit(product)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-text-muted hover:text-primary hover:bg-primary/10 transition-all" style={{ width: '2rem', height: '2rem', borderRadius: '0.5rem' }}><FiEdit2 size={14} /></button>
-                      <button onClick={() => handleDelete(product.id)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-text-muted hover:text-danger hover:bg-danger/10 transition-all" style={{ width: '2rem', height: '2rem', borderRadius: '0.5rem' }}><FiTrash2 size={14} /></button>
-                      <button className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-text-muted hover:text-white" style={{ width: '2rem', height: '2rem', borderRadius: '0.5rem' }}><FiMoreVertical size={14} /></button>
+                  <td style={{ padding: '24px', fontWeight: '900', color: '#111827' }}>{product.price} DH</td>
+                  <td style={{ padding: '24px', fontWeight: '700', color: '#4b5563' }}>{product.stock} pcs</td>
+                  <td style={{ padding: '24px' }}>
+                    <span style={{ 
+                      padding: '4px 12px', 
+                      borderRadius: '9999px', 
+                      fontSize: '10px', 
+                      fontWeight: '900', 
+                      backgroundColor: product.is_active ? '#ecfdf5' : '#fef2f2', 
+                      color: product.is_active ? '#059669' : '#ef4444' 
+                    }}>
+                      {product.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '24px', textAlign: 'right' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                      <button onClick={() => handleEditClick(product)} style={{ padding: '8px', color: '#9ca3af', border: 'none', backgroundColor: 'transparent', cursor: 'pointer' }}><FiEdit2 size={18} /></button>
+                      <button onClick={() => handleDelete(product.id)} style={{ padding: '8px', color: '#9ca3af', border: 'none', backgroundColor: 'transparent', cursor: 'pointer' }}><FiTrash2 size={18} /></button>
                     </div>
                   </td>
                 </tr>
@@ -178,81 +221,63 @@ export default function AdminProducts() {
         </div>
       </div>
 
-      {/* Product Modal */}
-      <AnimatePresence>
-        {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowModal(false)} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto glass-card p-10 rounded-[32px] border-white/10"
-              style={{ backgroundColor: 'var(--color-bg-card)', padding: '2.5rem', borderRadius: '2rem', overflowY: 'auto', maxWidth: '56rem', width: '100%' }}
-            >
-              <h2 className="text-3xl font-black mb-8" style={{ fontWeight: 900 }}>{editingProduct ? 'Edit Product' : 'Create Product'}</h2>
-              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-                <div className="md:col-span-2 input-group" style={{ gridColumn: 'span 2' }}>
-                  <label>Product Name</label>
-                  <input required className="input-field" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+      {/* EDIT MODAL */}
+      {showModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)', padding: '20px' }}>
+          <div style={{ backgroundColor: '#fff', width: '100%', maxWidth: '500px', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            <div style={{ padding: '24px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '900', color: '#111827', margin: 0 }}>Update Product</h2>
+              <button onClick={() => setShowModal(false)} style={{ border: 'none', backgroundColor: 'transparent', color: '#9ca3af', cursor: 'pointer' }}>
+                <FiX size={24} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdate} style={{ padding: '24px' }}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={labelStyle}>Product Name</label>
+                <input type="text" required style={inputStyle} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                <div>
+                  <label style={labelStyle}>Price (DH)</label>
+                  <input type="number" required style={inputStyle} value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
                 </div>
-                
-                <div className="input-group">
-                  <label>Category</label>
-                  <select required className="input-field" value={formData.category_id} onChange={(e) => setFormData({...formData, category_id: e.target.value})}>
-                    <option value="">Select Category</option>
-                    {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                  </select>
+                <div>
+                  <label style={labelStyle}>Stock</label>
+                  <input type="number" required style={inputStyle} value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} />
                 </div>
+              </div>
 
-                <div className="input-group">
-                  <label>Status</label>
-                  <select className="input-field" value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})}>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="draft">Draft</option>
-                  </select>
-                </div>
+              <div style={{ marginBottom: '24px' }}>
+                <label style={labelStyle}>Category</label>
+                <select style={inputStyle} value={formData.category_id} onChange={e => setFormData({...formData, category_id: e.target.value})}>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
 
-                <div className="input-group">
-                  <label>Price ($)</label>
-                  <input required type="number" step="0.01" className="input-field" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} />
-                </div>
+              <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                 <input 
+                  type="checkbox" 
+                  id="is_active"
+                  checked={formData.is_active} 
+                  onChange={e => setFormData({...formData, is_active: e.target.checked})} 
+                  style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                />
+                <label htmlFor="is_active" style={{ fontSize: '14px', fontWeight: '700', color: '#111827', cursor: 'pointer' }}>Product is Active</label>
+              </div>
 
-                <div className="input-group">
-                  <label>Compare Price ($)</label>
-                  <input type="number" step="0.01" className="input-field" value={formData.compare_price} onChange={(e) => setFormData({...formData, compare_price: e.target.value})} />
-                </div>
-
-                <div className="input-group">
-                  <label>Initial Stock</label>
-                  <input required type="number" className="input-field" value={formData.stock} onChange={(e) => setFormData({...formData, stock: e.target.value})} />
-                </div>
-
-                <div className="flex items-center gap-3 pt-8" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingTop: '2rem' }}>
-                  <input type="checkbox" id="featured" checked={formData.is_featured} onChange={(e) => setFormData({...formData, is_featured: e.target.checked})} className="w-5 h-5 accent-primary" />
-                  <label htmlFor="featured" className="cursor-pointer font-bold">Mark as Featured</label>
-                </div>
-
-                <div className="md:col-span-2 input-group" style={{ gridColumn: 'span 2' }}>
-                  <label>Short Description</label>
-                  <input className="input-field" value={formData.short_description} onChange={(e) => setFormData({...formData, short_description: e.target.value})} />
-                </div>
-
-                <div className="md:col-span-2 input-group" style={{ gridColumn: 'span 2' }}>
-                  <label>Detailed Description</label>
-                  <textarea className="input-field min-h-[150px] py-4" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
-                </div>
-
-                <div className="md:col-span-2 flex justify-end gap-4 pt-8" style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', gap: '1rem', paddingTop: '2rem' }}>
-                  <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary px-8">Cancel</button>
-                  <button type="submit" className="btn btn-primary px-12">Save Product</button>
-                </div>
-              </form>
-            </motion.div>
+              <button 
+                type="submit" 
+                disabled={saving}
+                style={{ width: '100%', backgroundColor: '#FF6600', color: '#fff', padding: '16px', borderRadius: '12px', fontWeight: '900', border: 'none', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}
+              >
+                {saving ? 'UPDATING...' : 'SAVE CHANGES'}
+              </button>
+            </form>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }

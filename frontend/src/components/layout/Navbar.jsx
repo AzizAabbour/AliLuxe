@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiShoppingBag, FiHeart, FiUser, FiSearch, FiMenu, FiX, FiLogOut, FiSettings, FiChevronDown, FiHome, FiPackage } from 'react-icons/fi';
+import { FiShoppingBag, FiHeart, FiUser, FiSearch, FiMenu, FiX, FiLogOut, FiSettings, FiChevronDown, FiHome, FiPackage, FiZap, FiTruck, FiShield, FiStar } from 'react-icons/fi';
 import { logout } from '../../store/slices/authSlice';
+import { fetchCategories } from '../../store/slices/categorySlice';
+import AdminNavbar from './AdminNavbar';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -14,6 +16,7 @@ export default function Navbar() {
   const { user, token } = useSelector((state) => state.auth);
   const { itemsCount } = useSelector((state) => state.cart);
   const { items: wishlistItems } = useSelector((state) => state.wishlist);
+  const { items: categories } = useSelector((state) => state.categories);
   
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -22,8 +25,9 @@ export default function Navbar() {
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
+    dispatch(fetchCategories());
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [dispatch]);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -38,7 +42,17 @@ export default function Navbar() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200" style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e5e5' }}>
+    <header style={{ 
+      position: 'fixed', 
+      top: 0, 
+      left: 0, 
+      right: 0, 
+      zIndex: 1000, 
+      backgroundColor: '#fff', 
+      borderBottom: '1px solid #e5e5e5',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
       {/* Top Bar */}
       <div className="hidden md:block bg-gray-100 py-1" style={{ backgroundColor: '#f5f5f5', borderBottom: '1px solid #eee' }}>
         <div className="container flex justify-between text-[11px] text-gray-500 font-medium" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#666' }}>
@@ -126,20 +140,72 @@ export default function Navbar() {
       </div>
 
       {/* Sub Nav / Categories */}
-      <div className="bg-white border-t border-gray-100 hidden md:block" style={{ backgroundColor: '#fff', borderTop: '1px solid #f5f5f5' }}>
-        <div className="container py-2 flex items-center gap-8 text-[13px] font-bold text-gray-800" style={{ display: 'flex', alignItems: 'center', gap: '2rem', padding: '0.5rem 0', fontSize: '13px', fontWeight: 700 }}>
-          <div className="flex items-center gap-2 cursor-pointer hover:text-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <FiMenu /> All Categories
+      <div className="bg-white border-t border-gray-100 hidden md:block shadow-sm" style={{ backgroundColor: '#fff', borderTop: '1px solid #f5f5f5' }}>
+        <div className="container py-0 flex items-center justify-between" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '45px' }}>
+          <div className="flex items-center gap-8 h-full" style={{ display: 'flex', alignItems: 'center', gap: '2rem', height: '100%' }}>
+            {/* Categories Dropdown Trigger */}
+            <div className="relative group h-full flex items-center" style={{ height: '100%' }}>
+              <button className="flex items-center gap-2 px-4 h-full font-bold text-gray-800 hover:text-primary transition-all bg-gray-50/50" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0 1rem', fontWeight: 800, fontSize: '13px', backgroundColor: 'rgba(0,0,0,0.02)' }}>
+                <FiMenu size={18} />
+                <span>All Categories</span>
+                <FiChevronDown size={14} className="group-hover:rotate-180 transition-transform" />
+              </button>
+
+              {/* Categories Dropdown Menu */}
+              <div className="absolute top-full left-0 w-64 bg-white shadow-2xl border border-gray-100 rounded-b-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[100] py-4" style={{ position: 'absolute', top: '100%', left: 0, width: '16rem', backgroundColor: '#fff', padding: '1rem 0', zIndex: 100, borderBottomLeftRadius: '0.75rem', borderBottomRightRadius: '0.75rem' }}>
+                {categories && categories.length > 0 ? (
+                  categories.map(cat => (
+                    <Link 
+                      key={cat.id} 
+                      to={`/shop?category=${cat.slug}`} 
+                      className="flex items-center justify-between px-6 py-2.5 text-[13px] text-gray-600 hover:bg-orange-50 hover:text-primary transition-colors"
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.625rem 1.5rem', fontSize: '13px' }}
+                    >
+                      <span className="font-medium">{cat.name}</span>
+                      <FiChevronDown className="-rotate-90 opacity-40" size={12} />
+                    </Link>
+                  ))
+                ) : (
+                  <div className="px-6 py-2 text-[13px] text-gray-400">Loading categories...</div>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Links */}
+            <nav className="flex items-center gap-6 text-[13px] font-bold text-gray-600 h-full" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', fontSize: '13px', fontWeight: 700 }}>
+              <Link to="/shop" className="flex items-center gap-2 hover:text-primary transition-colors py-2" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <FiZap className="text-orange-500" /> Ready to Ship
+              </Link>
+              <Link to="/shop" className="hover:text-primary transition-colors py-2">Personal Protective Equipment</Link>
+              <Link to="/shop" className="flex items-center gap-2 hover:text-primary transition-colors py-2" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <FiShield className="text-blue-500" /> Trade Assurance
+              </Link>
+              <Link to="/shop" className="flex items-center gap-2 hover:text-primary transition-colors py-2" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <FiStar className="text-yellow-500" /> Luxe Membership
+              </Link>
+            </nav>
           </div>
-          <Link to="/shop" className="hover:text-primary">Ready to Ship</Link>
-          <Link to="/shop" className="hover:text-primary">Personal Protective Equipment</Link>
-          <Link to="/shop" className="hover:text-primary">Trade Assurance</Link>
-          <Link to="/shop" className="hover:text-primary">Luxe Membership</Link>
-          {user?.role === 'admin' && (
-            <Link to="/admin" className="text-primary font-black border-l pl-8" style={{ borderLeft: '1px solid #eee' }}>ADMIN DASHBOARD</Link>
-          )}
+
+          {/* Right Side Links */}
+          <div className="flex items-center gap-6" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            {user?.role === 'admin' && (
+              <Link to="/admin" className="text-primary font-black text-xs hover:scale-105 transition-transform" style={{ color: 'var(--color-primary)', fontWeight: 900, fontSize: '11px', letterSpacing: '0.05em' }}>
+                ADMIN DASHBOARD
+              </Link>
+            )}
+            <div className="h-4 w-[1px] bg-gray-200" style={{ height: '1rem', width: '1px', backgroundColor: '#eee' }}></div>
+            <Link to="/contact" className="text-[12px] text-gray-500 hover:text-primary transition-colors" style={{ fontSize: '12px' }}>Help Center</Link>
+          </div>
         </div>
       </div>
+      
+      {/* Admin Secondary Navbar */}
+      {user?.role === 'admin' && (
+        <div style={{ width: '100%', borderTop: '1px solid #f0f0f0' }}>
+          <AdminNavbar />
+        </div>
+      )}
+
       {/* Mobile Menu Sidebar */}
       <AnimatePresence>
         {isMobileMenuOpen && (
@@ -150,8 +216,8 @@ export default function Navbar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileMenuOpen(false)}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]"
-              style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 60 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+              style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 2000 }}
             />
             
             {/* Menu */}
@@ -160,8 +226,8 @@ export default function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 bottom-0 w-[300px] bg-white z-[70] shadow-2xl flex flex-col"
-              style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '300px', backgroundColor: '#fff', zIndex: 70, display: 'flex', flexDirection: 'column' }}
+              className="fixed top-0 right-0 bottom-0 w-[300px] bg-white shadow-2xl flex flex-col"
+              style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '300px', backgroundColor: '#fff', zIndex: 2001, display: 'flex', flexDirection: 'column' }}
             >
               {/* Menu Header */}
               <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10" style={{ padding: '1.5rem', borderBottom: '1px solid #f5f5f5', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

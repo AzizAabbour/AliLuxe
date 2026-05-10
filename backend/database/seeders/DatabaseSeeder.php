@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'admin@luxestore.com',
             'password' => bcrypt('password'),
             'role' => 'admin',
-            'phone' => '+212600000000',
+            'phone' => '+212777996998',
             'status' => 'active',
             'email_verified_at' => now(),
         ]);

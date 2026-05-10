@@ -30,6 +30,7 @@ const AdminProducts = lazy(() => import('./pages/admin/AdminProducts'));
 const AdminCategories = lazy(() => import('./pages/admin/AdminCategories'));
 const AdminOrders = lazy(() => import('./pages/admin/AdminOrders'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const CreateProduct = lazy(() => import('./pages/admin/CreateProduct'));
 
 function App() {
   const dispatch = useDispatch();
@@ -65,16 +66,17 @@ function App() {
             <Route path="/orders/:id" element={<OrderDetails />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
-        </Route>
 
-        {/* Admin Routes */}
-        <Route element={<AdminRoute />}>
-          <Route element={<AdminLayout />}>
-            <Route path="/admin" element={<Dashboard />} />
+          {/* Admin Routes (Nested in Layout for Secondary Navbar) */}
+          <Route element={<AdminRoute />}>
+            <Route path="/admin/dashboard" element={<Dashboard />} />
             <Route path="/admin/products" element={<AdminProducts />} />
+            <Route path="/admin/products/create" element={<CreateProduct />} />
             <Route path="/admin/categories" element={<AdminCategories />} />
             <Route path="/admin/orders" element={<AdminOrders />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/customers" element={<AdminUsers />} />
+            {/* Alias /admin to dashboard */}
+            <Route path="/admin" element={<Dashboard />} />
           </Route>
         </Route>
       </Routes>

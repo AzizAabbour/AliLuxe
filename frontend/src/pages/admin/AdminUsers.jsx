@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { FiUsers, FiSearch, FiMail, FiPhone, FiShield, FiMoreVertical, FiTrash2 } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiSearch, FiUserX, FiCheckCircle, FiMoreVertical, FiMail, FiCalendar, FiTrash2, FiCopy, FiX, FiSend } from 'react-icons/fi';
 import api from '../../api/axios';
 import LoadingScreen from '../../components/ui/LoadingScreen';
 import toast from 'react-hot-toast';
@@ -8,100 +8,165 @@ import toast from 'react-hot-toast';
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  
+  // Email Modal State
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [emailData, setEmailData] = useState({
+    subject: 'Message from AliLuxe Support',
+    message: ''
+  });
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = () => {
     setLoading(true);
-    try {
-      const { data } = await api.get('/admin/users');
-      setUsers(data.data);
-    } catch (err) {
-      toast.error('Failed to fetch users');
-    } finally {
-      setLoading(false);
+    api.get('/admin/users')
+      .then(res => {
+        const data = res.data.data || res.data.users || res.data;
+        setUsers(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  };
+
+  const handleDeleteUser = (id) => {
+    if (window.confirm('Are you sure you want to permanently delete this user account?')) {
+      api.delete(`/admin/users/${id}`)
+        .then(() => {
+          toast.success('User deleted successfully');
+          fetchUsers();
+        })
+        .catch(err => toast.error('Error deleting user'));
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Delete user?')) {
-      try {
-        await api.delete(`/admin/users/${id}`);
-        toast.success('User removed');
-        fetchUsers();
-      } catch (err) {
-        toast.error('Failed to delete');
-      }
-    }
+  const openEmailModal = (user) => {
+    setSelectedUser(user);
+    setEmailData({
+      subject: 'Update regarding your account at AliLuxe',
+      message: `Hello ${user.name},\n\n`
+    });
+    setShowEmailModal(true);
   };
 
-  if (loading) return <LoadingScreen />;
+  const handleSendEmail = (e) => {
+    e.preventDefault();
+    // Fallback mailto construction
+    const mailtoUrl = `mailto:${selectedUser.email}?subject=${encodeURIComponent(emailData.subject)}&body=${encodeURIComponent(emailData.message)}`;
+    
+    // Try to open it
+    const win = window.open(mailtoUrl, '_blank');
+    
+    // Also copy to clipboard as safety
+    navigator.clipboard.writeText(emailData.message);
+    
+    toast.success('Attempting to open email app and copied message to clipboard!');
+    setShowEmailModal(false);
+  };
+
+  const filteredUsers = Array.isArray(users)
+    ? users.filter(u => u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()))
+    : [];
+
+  const inputStyle = {
+    width: '100%',
+    padding: '12px 16px',
+    backgroundColor: '#f9fafb',
+    border: '1px solid #e5e7eb',
+    borderRadius: '10px',
+    fontSize: '14px',
+    fontWeight: '700',
+    color: '#111827',
+    outline: 'none',
+    boxSizing: 'border-box',
+    display: 'block',
+    marginTop: '6px'
+  };
+
+  const labelStyle = {
+    fontSize: '10px',
+    fontWeight: '900',
+    color: '#9ca3af',
+    textTransform: 'uppercase',
+    letterSpacing: '0.1em'
+  };
+
+  if (loading && users.length === 0) return <LoadingScreen />;
 
   return (
-    <div className="space-y-8" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <header>
-        <h1 className="text-3xl font-black mb-2" style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 900 }}>Customer Directory</h1>
-        <p className="text-text-secondary">View and manage all registered users and their accounts.</p>
-      </header>
+    <div style={{ maxWidth: '1400px', margin: '0 auto', paddingTop: '180px', paddingBottom: '80px', paddingLeft: '24px', paddingRight: '24px' }}>
+      <div style={{ marginBottom: '40px' }}>
+        <h1 style={{ fontSize: '36px', fontWeight: '900', color: '#111827', margin: '0 0 8px 0' }}>Customer Database</h1>
+        <p style={{ color: '#6b7280', margin: 0 }}>Manage your registered users and their account statuses.</p>
+      </div>
 
-      <div className="glass-card p-8" style={{ padding: '2rem', borderRadius: '1.5rem', border: '1px solid rgba(255,255,255,0.05)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-        <div className="mb-8 relative" style={{ marginBottom: '2rem' }}>
-          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
-          <input type="text" placeholder="Search by name, email..." className="input-field w-full pl-12" style={{ width: '100%', paddingLeft: '3rem' }} />
+      <div style={{ backgroundColor: '#fff', padding: '16px', borderRadius: '20px', border: '1px solid #f3f4f6', marginBottom: '32px', display: 'flex', gap: '16px' }}>
+        <div style={{ position: 'relative', flexGrow: 1 }}>
+          <FiSearch style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} size={20} />
+          <input 
+            type="text" 
+            placeholder="Search customers..." 
+            style={{ width: '100%', padding: '14px 16px 14px 48px', backgroundColor: '#f9fafb', border: 'none', borderRadius: '14px', outline: 'none' }}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
+      </div>
 
-        <div className="overflow-x-auto" style={{ overflowX: 'auto' }}>
-          <table className="w-full" style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr className="text-left border-b border-white/5" style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <th className="pb-4 px-4 text-xs uppercase tracking-widest text-text-muted font-black" style={{ padding: '0 1rem 1rem 1rem', fontSize: '10px' }}>User</th>
-                <th className="pb-4 px-4 text-xs uppercase tracking-widest text-text-muted font-black" style={{ padding: '0 1rem 1rem 1rem', fontSize: '10px' }}>Contact</th>
-                <th className="pb-4 px-4 text-xs uppercase tracking-widest text-text-muted font-black" style={{ padding: '0 1rem 1rem 1rem', fontSize: '10px' }}>Role</th>
-                <th className="pb-4 px-4 text-xs uppercase tracking-widest text-text-muted font-black" style={{ padding: '0 1rem 1rem 1rem', fontSize: '10px' }}>Status</th>
-                <th className="pb-4 px-4 text-xs uppercase tracking-widest text-text-muted font-black" style={{ padding: '0 1rem 1rem 1rem', fontSize: '10px' }}>Joined</th>
-                <th className="pb-4 px-4 text-xs uppercase tracking-widest text-text-muted font-black text-right" style={{ padding: '0 1rem 1rem 1rem', fontSize: '10px', textAlign: 'right' }}>Actions</th>
+      <div style={{ backgroundColor: '#fff', borderRadius: '30px', border: '1px solid #f3f4f6', overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead style={{ backgroundColor: '#f9fafb' }}>
+              <tr>
+                <th style={{ padding: '24px', textAlign: 'left', fontSize: '10px', fontWeight: '900', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Customer</th>
+                <th style={{ padding: '24px', textAlign: 'left', fontSize: '10px', fontWeight: '900', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Contact</th>
+                <th style={{ padding: '24px', textAlign: 'left', fontSize: '10px', fontWeight: '900', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Joined Date</th>
+                <th style={{ padding: '24px', textAlign: 'left', fontSize: '10px', fontWeight: '900', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Status</th>
+                <th style={{ padding: '24px', textAlign: 'right', fontSize: '10px', fontWeight: '900', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {users.map(user => (
-                <tr key={user.id} className="border-b border-white/5 last:border-0 hover:bg-white/2 transition-colors" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <td className="py-4 px-4" style={{ padding: '1rem' }}>
-                    <div className="flex items-center gap-4" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold" style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', backgroundColor: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {user.name?.[0]}
+            <tbody style={{ borderTop: '1px solid #f3f4f6' }}>
+              {filteredUsers.map((user) => (
+                <tr key={user.id} style={{ borderBottom: '1px solid #f9fafb' }}>
+                  <td style={{ padding: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontWeight: '900' }}>
+                        {user.name?.[0]?.toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-bold text-sm" style={{ fontWeight: 700, fontSize: '0.875rem' }}>{user.name}</p>
-                        <p className="text-[10px] text-text-muted font-black uppercase" style={{ fontSize: '10px' }}>ID: #{user.id}</p>
+                        <p style={{ fontWeight: '900', color: '#111827', margin: 0 }}>{user.name}</p>
+                        <p style={{ fontSize: '12px', color: '#9ca3af', margin: 0 }}>ID: #{user.id.toString().padStart(5, '0')}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="py-4 px-4" style={{ padding: '1rem' }}>
-                    <div className="flex flex-col gap-1" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <p className="text-sm flex items-center gap-2" style={{ fontSize: '0.875rem' }}><FiMail size={12} className="text-primary" /> {user.email}</p>
-                      {user.phone && <p className="text-xs text-text-secondary flex items-center gap-2" style={{ fontSize: '0.75rem' }}><FiPhone size={12} /> {user.phone}</p>}
-                    </div>
-                  </td>
-                  <td className="py-4 px-4" style={{ padding: '1rem' }}>
-                    <div className="flex items-center gap-2" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <FiShield className={user.role === 'admin' ? 'text-primary' : 'text-text-muted'} />
-                      <span className={`text-xs font-bold uppercase tracking-widest ${user.role === 'admin' ? 'text-primary' : 'text-text-secondary'}`} style={{ fontSize: '10px', fontWeight: 800 }}>{user.role}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-4" style={{ padding: '1rem' }}>
-                    <span className={`badge py-1 px-3 text-[10px] uppercase font-bold ${user.status === 'active' ? 'badge-success' : 'badge-danger'}`} style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '10px' }}>
+                  <td style={{ padding: '24px', color: '#4b5563', fontSize: '14px' }}>{user.email}</td>
+                  <td style={{ padding: '24px', color: '#4b5563', fontSize: '14px' }}>{new Date(user.created_at).toLocaleDateString()}</td>
+                  <td style={{ padding: '24px' }}>
+                    <span style={{ padding: '4px 12px', borderRadius: '9999px', fontSize: '10px', fontWeight: '900', backgroundColor: user.status === 'active' ? '#ecfdf5' : '#fef2f2', color: user.status === 'active' ? '#059669' : '#ef4444' }}>
                       {user.status || 'active'}
                     </span>
                   </td>
-                  <td className="py-4 px-4 text-sm text-text-secondary" style={{ padding: '1rem', fontSize: '0.875rem' }}>
-                    {new Date(user.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="py-4 px-4 text-right" style={{ padding: '1rem', textAlign: 'right' }}>
-                    <div className="flex justify-end gap-2" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                      <button onClick={() => handleDelete(user.id)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-text-muted hover:text-danger" style={{ width: '2rem', height: '2rem', borderRadius: '0.5rem' }}><FiTrash2 size={14} /></button>
-                      <button className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-text-muted" style={{ width: '2rem', height: '2rem', borderRadius: '0.5rem' }}><FiMoreVertical size={14} /></button>
+                  <td style={{ padding: '24px', textAlign: 'right' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                      <button 
+                        onClick={() => openEmailModal(user)}
+                        style={{ padding: '8px', color: '#9ca3af', border: 'none', backgroundColor: 'transparent', cursor: 'pointer' }}
+                      >
+                        <FiMail size={18} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteUser(user.id)}
+                        style={{ padding: '8px', color: '#9ca3af', border: 'none', backgroundColor: 'transparent', cursor: 'pointer' }}
+                      >
+                        <FiTrash2 size={18} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -110,6 +175,66 @@ export default function AdminUsers() {
           </table>
         </div>
       </div>
+
+      {/* EMAIL MODAL */}
+      {showEmailModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)', padding: '20px' }}>
+          <div style={{ backgroundColor: '#fff', width: '100%', maxWidth: '600px', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            <div style={{ padding: '24px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '900', color: '#111827', margin: 0 }}>Contact Customer</h2>
+              <button onClick={() => setShowEmailModal(false)} style={{ border: 'none', backgroundColor: 'transparent', color: '#9ca3af', cursor: 'pointer' }}>
+                <FiX size={24} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSendEmail} style={{ padding: '24px' }}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={labelStyle}>To</label>
+                <div style={{ ...inputStyle, backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}>{selectedUser?.email}</div>
+              </div>
+              
+              <div style={{ marginBottom: '16px' }}>
+                <label style={labelStyle}>Subject</label>
+                <input 
+                  type="text" 
+                  style={inputStyle} 
+                  value={emailData.subject} 
+                  onChange={e => setEmailData({...emailData, subject: e.target.value})} 
+                />
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <label style={labelStyle}>Message</label>
+                <textarea 
+                  rows="8" 
+                  style={{ ...inputStyle, resize: 'none' }} 
+                  value={emailData.message} 
+                  onChange={e => setEmailData({...emailData, message: e.target.value})}
+                ></textarea>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                 <button 
+                  type="button" 
+                  onClick={() => { navigator.clipboard.writeText(emailData.message); toast.success('Message copied!'); }}
+                  style={{ backgroundColor: '#f3f4f6', color: '#4b5563', padding: '16px', borderRadius: '12px', fontWeight: '900', border: 'none', cursor: 'pointer' }}
+                >
+                  COPY MESSAGE
+                </button>
+                <button 
+                  type="submit" 
+                  style={{ backgroundColor: '#FF6600', color: '#fff', padding: '16px', borderRadius: '12px', fontWeight: '900', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  <FiSend /> OPEN IN MAIL
+                </button>
+              </div>
+              <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '16px', textAlign: 'center' }}>
+                Click "OPEN IN MAIL" to send using your email app, or "COPY" to use Gmail/Yahoo.
+              </p>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

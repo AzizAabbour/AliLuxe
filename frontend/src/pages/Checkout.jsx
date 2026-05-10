@@ -143,7 +143,7 @@ export default function Checkout() {
                 {items.map(item => (
                   <div key={item.id} className="flex gap-4 items-center" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     <div className="w-16 h-16 rounded-xl bg-white/5 flex-shrink-0" style={{ width: '4rem', height: '4rem', borderRadius: '0.75rem', overflow: 'hidden' }}>
-                      <img src={item.product.primary_image?.image_path || item.product.images?.[0]?.image_path} className="w-full h-full object-cover" />
+                      <img src={item.product.primary_image?.image_path ? `http://localhost:8000/storage/${item.product.primary_image.image_path}` : (item.product.images?.[0]?.image_path ? `http://localhost:8000/storage/${item.product.images[0].image_path}` : 'https://via.placeholder.com/100')} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-grow min-w-0" style={{ flexGrow: 1 }}>
                       <h4 className="text-sm font-bold truncate" style={{ fontSize: '0.875rem', fontWeight: 700 }}>{item.product.name}</h4>
@@ -157,15 +157,15 @@ export default function Checkout() {
               <div className="space-y-4 pt-8 border-t border-white/5 mb-8" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)', marginBottom: '2rem' }}>
                 <div className="flex justify-between text-text-secondary" style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span>Subtotal</span>
-                  <span className="text-white font-medium">{subtotal.toFixed(2)} DH</span>
+                  <span className="text-gray-900 font-medium" style={{ color: '#000' }}>{subtotal.toFixed(2)} DH</span>
                 </div>
                 <div className="flex justify-between text-text-secondary" style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span>Shipping</span>
-                  <span className="text-white font-medium">{shipping.toFixed(2)} DH</span>
+                  <span className="text-gray-900 font-medium" style={{ color: '#000' }}>{shipping.toFixed(2)} DH</span>
                 </div>
                 <div className="flex justify-between text-text-secondary" style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span>TVA (20%)</span>
-                  <span className="text-white font-medium">{tax.toFixed(2)} DH</span>
+                  <span className="text-gray-900 font-medium" style={{ color: '#000' }}>{tax.toFixed(2)} DH</span>
                 </div>
                 <div className="flex justify-between pt-4 border-t border-white/5" style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                   <span className="text-xl font-bold">Total Amount</span>

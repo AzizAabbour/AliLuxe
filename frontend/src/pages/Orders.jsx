@@ -70,7 +70,7 @@ export default function Orders() {
           </div>
         </div>
 
-        {orders.length > 0 ? (
+        {Array.isArray(orders) && orders.length > 0 ? (
           <div className="space-y-8" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             {orders.map((order) => {
               const style = getStatusStyle(order.status);
@@ -91,7 +91,7 @@ export default function Orders() {
                       </div>
                       <div>
                         <p className="text-[11px] uppercase font-black text-gray-400 mb-1 tracking-wider">Total</p>
-                        <p className="text-sm font-black text-primary">{(order.total_amount || order.total).toFixed(2)} DH</p>
+                        <p className="text-sm font-black text-primary">{(order.total_amount || order.total || 0).toLocaleString()} DH</p>
                       </div>
                       <div>
                         <p className="text-[11px] uppercase font-black text-gray-400 mb-1 tracking-wider">Ship To</p>
@@ -115,29 +115,32 @@ export default function Orders() {
                         </div>
                         
                         {order.items?.map(item => (
-                          <div key={item.id} className="flex gap-6 group" style={{ display: 'flex', gap: '1.5rem' }}>
-                            <div className="w-24 h-24 rounded-2xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 shadow-sm" style={{ width: '6rem', height: '6rem', borderRadius: '1rem', backgroundColor: '#f9f9f9', border: '1px solid #eee', flexShrink: 0, overflow: 'hidden' }}>
-                              <img src={item.product?.primary_image?.image_path || `https://picsum.photos/seed/${item.id}/200`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={item.product_name} />
+                          <div key={item.id} className="flex gap-6 group items-center" style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                            <div className="w-20 h-20 rounded-2xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 shadow-sm" style={{ width: '5rem', height: '5rem', borderRadius: '1rem', backgroundColor: '#f9f9f9', border: '1px solid #eee', flexShrink: 0, overflow: 'hidden' }}>
+                              <img src={item.product?.primary_image?.image_path ? `http://localhost:8000/storage/${item.product.primary_image.image_path}` : `https://picsum.photos/seed/${item.id}/200`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={item.product_name} />
                             </div>
                             <div className="flex-grow" style={{ flexGrow: 1 }}>
-                              <Link to={`/product/${item.product?.slug}`} className="text-lg font-bold text-gray-900 hover:text-primary transition-colors line-clamp-2 leading-tight mb-2" style={{ fontWeight: 700, display: 'block' }}>{item.product_name}</Link>
-                              <p className="text-sm text-gray-500 font-medium mb-4">Quantity: <span className="font-bold text-gray-900">{item.quantity}</span> | <span className="font-bold text-primary">{item.price} DH</span></p>
+                              <Link to={`/product/${item.product?.slug}`} className="text-base font-bold text-gray-900 hover:text-primary transition-colors line-clamp-1 leading-tight mb-1" style={{ fontWeight: 700, display: 'block' }}>{item.product_name}</Link>
+                              <div className="flex items-center gap-4 mb-2">
+                                <p className="text-sm text-gray-500 font-medium">Qty: <span className="font-bold text-gray-900">{item.quantity}</span></p>
+                                <p className="text-sm font-bold text-primary">{item.price} DH</p>
+                              </div>
                               <button 
                                 onClick={() => handleBuyAgain(item)}
-                                className="flex items-center gap-2 text-xs font-black text-white bg-primary px-6 py-2 rounded-xl shadow-lg shadow-orange-500/20 hover:scale-105 transition-all active:scale-95" 
-                                style={{ backgroundColor: 'var(--color-primary)', color: '#fff', borderRadius: '0.75rem' }}
+                                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white bg-primary px-4 py-2 rounded-lg shadow-md shadow-orange-500/20 hover:scale-105 transition-all active:scale-95" 
+                                style={{ backgroundColor: 'var(--color-primary)', color: '#fff' }}
                               >
-                                <FiShoppingBag size={14} /> Buy it again
+                                <FiShoppingBag size={12} /> Buy it again
                               </button>
                             </div>
                           </div>
                         ))}
                     </div>
 
-                    <div className="w-full md:w-72 flex flex-col gap-3 pt-4" style={{ width: '18rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <button onClick={() => handleAction('Package Tracking')} className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm active:scale-95">Track package</button>
-                        <button onClick={() => handleAction('Returns')} className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm active:scale-95">Return or replace items</button>
-                        <button onClick={() => handleAction('Product Review')} className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm active:scale-95">Leave product review</button>
+                    <div className="w-full md:w-64 flex flex-col gap-2.5 pt-4" style={{ width: '16rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                        <button onClick={() => handleAction('Package Tracking')} className="w-full py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-black uppercase tracking-widest text-gray-600 hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm active:scale-95">Track package</button>
+                        <button onClick={() => handleAction('Returns')} className="w-full py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-black uppercase tracking-widest text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm active:scale-95">Return items</button>
+                        <button onClick={() => handleAction('Product Review')} className="w-full py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-black uppercase tracking-widest text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm active:scale-95">Write a review</button>
                     </div>
                   </div>
                 </motion.div>

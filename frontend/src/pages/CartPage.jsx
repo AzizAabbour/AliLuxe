@@ -64,7 +64,7 @@ export default function CartPage() {
                   style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '1.5rem', padding: '1.5rem', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '1rem', backgroundColor: 'rgba(255,255,255,0.02)' }}
                 >
                   <Link to={`/product/${item.product.slug}`} className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0" style={{ width: '6rem', height: '6rem', borderRadius: '0.75rem', overflow: 'hidden', flexShrink: 0 }}>
-                    <img src={item.product.primary_image?.image_path || item.product.images?.[0]?.image_path} alt={item.product.name} className="w-full h-full object-cover" />
+                    <img src={item.product.primary_image?.image_path ? `http://localhost:8000/storage/${item.product.primary_image.image_path}` : (item.product.images?.[0]?.image_path ? `http://localhost:8000/storage/${item.product.images[0].image_path}` : 'https://via.placeholder.com/100')} alt={item.product.name} className="w-full h-full object-cover" />
                   </Link>
                   
                   <div className="flex-grow text-center sm:text-left" style={{ flexGrow: 1, textAlign: 'left' }}>
@@ -72,7 +72,7 @@ export default function CartPage() {
                       {item.product.name}
                     </Link>
                     <p className="text-xs text-text-muted uppercase tracking-widest font-bold mb-2" style={{ fontSize: '10px', color: 'var(--color-text-muted)', fontWeight: 800 }}>{item.product.category?.name}</p>
-                    <p className="text-white font-black" style={{ fontWeight: 900 }}>{item.product.price} DH</p>
+                    <p className="text-gray-900 font-black" style={{ fontWeight: 900, color: '#000' }}>{item.product.price} DH</p>
                   </div>
 
                   <div className="flex items-center gap-6" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -117,20 +117,20 @@ export default function CartPage() {
               <div className="space-y-4 mb-8 pb-8 border-b border-white/5" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 <div className="flex justify-between text-text-secondary" style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-secondary)' }}>
                   <span>Subtotal</span>
-                  <span className="text-white font-medium">{total.toFixed(2)} DH</span>
+                  <span className="text-gray-900 font-medium" style={{ color: '#000' }}>{total.toFixed(2)} DH</span>
                 </div>
                 <div className="flex justify-between text-text-secondary" style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-secondary)' }}>
                   <span>Shipping</span>
-                  <span className="text-white font-medium">{total > 500 ? 'Free' : '25.00 DH'}</span>
+                  <span className="text-gray-900 font-medium" style={{ color: '#000' }}>{total > 500 ? 'Free' : '25.00 DH'}</span>
                 </div>
                 <div className="flex justify-between text-text-secondary" style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-secondary)' }}>
                   <span>TVA (20%)</span>
-                  <span className="text-white font-medium">{(total * 0.2).toFixed(2)} DH</span>
+                  <span className="text-gray-900 font-medium" style={{ color: '#000' }}>{(total * 0.2).toFixed(2)} DH</span>
                 </div>
               </div>
 
               <div className="flex justify-between items-end mb-10" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem' }}>
-                <span className="text-lg font-bold text-text-secondary">Total</span>
+                <span className="text-lg font-bold text-gray-900" style={{ color: '#000' }}>Total</span>
                 <span className="text-4xl font-black text-primary" style={{ fontSize: '2.25rem', fontWeight: 900, color: 'var(--color-primary)' }}>
                   {(total + (total > 500 ? 0 : 25) + (total * 0.2)).toFixed(2)} DH
                 </span>

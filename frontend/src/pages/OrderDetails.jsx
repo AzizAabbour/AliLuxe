@@ -74,11 +74,11 @@ export default function OrderDetails() {
                   {order.items?.map((item) => (
                     <div key={item.id} className="p-8 flex items-center gap-6 group hover:bg-gray-50 transition-colors">
                        <div className="w-24 h-24 rounded-2xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0">
-                          <img src={item.product?.primary_image?.image_path || `https://picsum.photos/seed/${item.id}/200`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={item.product_name} />
+                          <img src={item.product?.primary_image?.image_path ? `http://localhost:8000/storage/${item.product.primary_image.image_path}` : `https://picsum.photos/seed/${item.id}/200`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={item.product_name} />
                        </div>
                        <div className="flex-grow">
                           <h4 className="font-bold text-gray-900 text-lg mb-1">{item.product_name}</h4>
-                          <p className="text-sm text-gray-500 mb-4">Unit Price: {item.price} DH</p>
+                          <p className="text-sm text-gray-900 mb-4" style={{ color: '#333' }}>Unit Price: {item.price} DH</p>
                           <div className="flex items-center gap-4">
                              <Link to={`/product/${item.product?.slug}`} className="text-sm font-black text-primary hover:underline">View Product</Link>
                              <button className="text-sm font-black text-gray-400 hover:text-gray-900 flex items-center gap-1">
@@ -87,7 +87,7 @@ export default function OrderDetails() {
                           </div>
                        </div>
                        <div className="text-right">
-                          <p className="text-lg font-black text-gray-900">{(item.price * item.quantity).toFixed(2)} DH</p>
+                          <p className="text-lg font-black text-gray-900" style={{ color: '#000' }}>{(item.price * item.quantity).toFixed(2)} DH</p>
                           <p className="text-sm text-gray-400 font-bold">Qty: {item.quantity}</p>
                        </div>
                     </div>
@@ -96,7 +96,7 @@ export default function OrderDetails() {
                <div className="p-8 bg-gray-50/50 flex flex-col gap-3">
                   <div className="flex justify-between text-gray-500 font-medium">
                      <span>Subtotal</span>
-                     <span className="text-gray-900">{(order.total_amount || order.total).toFixed(2)} DH</span>
+                     <span className="text-gray-900" style={{ color: '#000', fontWeight: 700 }}>{(order.total_amount || order.total).toFixed(2)} DH</span>
                   </div>
                   <div className="flex justify-between text-gray-500 font-medium">
                      <span>Shipping Fee</span>

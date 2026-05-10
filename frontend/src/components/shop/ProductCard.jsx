@@ -23,8 +23,13 @@ export default function ProductCard({ product }) {
     toast.success(isWishlisted ? 'Removed from wishlist' : 'Added to wishlist');
   };
 
-  const primaryImage = product.primary_image?.image_path || 
-                       (product.images && product.images.length > 0 ? product.images[0].image_path : 'https://via.placeholder.com/400');
+  const getImageUrl = (path) => {
+    if (!path) return 'https://via.placeholder.com/400';
+    if (path.startsWith('http')) return path;
+    return `http://localhost:8000/storage/${path}`;
+  };
+
+  const primaryImage = getImageUrl(product.primary_image?.image_path || (product.images?.[0]?.image_path));
 
   return (
     <motion.div 
@@ -75,7 +80,7 @@ export default function ProductCard({ product }) {
         
         <div className="flex flex-col gap-0.5" style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
           <div className="flex items-baseline gap-1" style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
-            <span className="text-lg font-black text-gray-900" style={{ fontSize: '1.125rem', fontWeight: 900 }}>{product.price} DH</span>
+            <span className="text-lg font-black text-gray-900" style={{ fontSize: '1.125rem', fontWeight: 900, color: '#000' }}>{product.price} DH</span>
             <span className="text-xs text-gray-400 font-medium" style={{ fontSize: '11px', color: '#888' }}>/ Piece</span>
           </div>
           <p className="text-[11px] text-gray-500" style={{ fontSize: '11px', color: '#999' }}>1 Piece (Min. Order)</p>
